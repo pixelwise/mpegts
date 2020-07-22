@@ -1,14 +1,32 @@
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required(VERSION 3.10)
 project (mpegts)
 
-set(CMAKE_CXX_FLAGS "-g -std=c++11 -Wall")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(AMF0_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../amf0/amf0)
-set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mpegts)
+add_library(
+    mpegts
+    mpegts/common.cpp
+    mpegts/simple_buffer.cpp 
+    mpegts/mpegts_muxer.cpp 
+    mpegts/mpegts_demuxer.cpp 
+    mpegts/ts_packet.cpp 
+    mpegts/crc.cpp 
+)
 
-set(SRC_FILE_LISTS mpegts/common.cpp mpegts/common.h mpegts/flv_muxer.cpp mpegts/flv_muxer.h ${AMF0_DIR}/amf_core.h ${AMF0_DIR}/amf0.h ${AMF0_DIR}/amf0.cpp ${AMF0_DIR}/amf_errno.h ${AMF0_DIR}/simple_buffer.h ${AMF0_DIR}/simple_buffer.cpp)
-include_directories(${SRC_DIR} ${AMF0_DIR})
-aux_source_directory(${SRC_DIR} SRC_FILE_LISTS)
+target_include_directories(
+    mpegts
+    INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
-add_executable(mpegts.out ${SRC_FILE_LISTS} ${SRC_DIR}/main.cpp)
+add_executable(
+    mpegts_test
+    mpegts/main.cpp
+)
 
+target_link_libraries(
+    mpegts_test
+    mpegts
+)

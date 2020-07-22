@@ -5,7 +5,6 @@
 #include "mpegts_demuxer.h"
 #include "simple_buffer.h"
 #include "ts_packet.h"
-#include "flv_muxer.h"
 
 std::map<uint16_t, std::ofstream*> file_map;
 
@@ -29,30 +28,21 @@ void write_file(const TsFrame *frame)
 
 int main(int argc, char *argv[])
 {
-    if (argc <= 1) {
-        std::cout << "usage: ./mpegts.out in.ts" << std::endl;
+    if (argc <= 3) {
+        std::cout << "usage: " << argv[0] << " <in>.ts <out>.ts" << std::endl;
         return 0;
     }
 
     std::string in_file_name = argv[1];
-    std::string out_file_name = in_file_name + "out.ts";
-    std::string out_flv_fileName = in_file_name + "out.flv";
-    if (argc > 2) {
-        out_file_name = argv[2];
-    }
+    std::string out_file_name = argv[2];
 
     std::cout << "input ts: " << in_file_name << std::endl;
     std::cout << "output ts: " << out_file_name << std::endl;
 
     std::ifstream ifile(in_file_name, std::ios::binary | std::ios::in);
     std::ofstream outts(out_file_name, std::ios::binary);
-    std::ofstream outflv(out_flv_fileName, std::ios::binary);
 
     std::shared_ptr<MpegTsMuxer> muxer(new MpegTsMuxer);
-    std::shared_ptr<FLVMuxer> flvMuxer(new FLVMuxer);
-    SimpleBuffer flvOutBuffer;
-    flvMuxer->write_header(&flvOutBuffer);
-    flvMuxer->write_metadata(&flvOutBuffer, 0);
 
     MpegTsDemuxer demuxer;
     char packet[188] = { 0 };
@@ -64,25 +54,14 @@ int main(int argc, char *argv[])
         ifile.read(packet, 188);
         in.append(packet, 188);
 
-        auto frame = demuxer.decode(&in);
+        auto frame = demuxer.decode(in);
 
         write_file(frame.get());
         if (frame) {
-            muxer->encode(frame.get(), demuxer.stream_pid_map, demuxer.pmt_id, &out);
-            flvMuxer->write_body(frame.get(), &flvOutBuffer);
-            outflv.write(flvOutBuffer.data(), flvOutBuffer.size());
-            flvOutBuffer.clear();
+            muxer->encode(frame.get(), demuxer.stream_pid_map, demuxer.pmt_id, out);
             outts.write(out.data(), out.size());
             out.clear();
         }
-    }
-
-    {
-        outflv.seekp(0, std::ios::end);
-        uint32_t fileSize = outflv.tellp();
-        flvMuxer->write_metadata(&flvOutBuffer, fileSize);
-        outflv.seekp(13, std::ios::beg);
-        outflv.write(flvOutBuffer.data(), flvOutBuffer.size());
     }
 
     ifile.close();

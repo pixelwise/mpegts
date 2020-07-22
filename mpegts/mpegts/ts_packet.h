@@ -44,8 +44,8 @@ public:
     virtual ~TsHeader();
 
 public:
-    void encode(SimpleBuffer *sb);
-    void decode(SimpleBuffer *sb);
+    void encode(SimpleBuffer& sb);
+    void decode(SimpleBuffer& sb);
 
 public:
     uint8_t sync_byte;                      // 8 bits
@@ -65,8 +65,8 @@ public:
     virtual ~PATHeader();
 
 public:
-    void encode(SimpleBuffer *sb);
-    void decode(SimpleBuffer *sb);
+    void encode(SimpleBuffer& sb);
+    void decode(SimpleBuffer& sb);
     void print();
 
 public:
@@ -91,8 +91,8 @@ public:
     virtual ~PMTElementInfo();
 
 public:
-    void encode(SimpleBuffer *sb);
-    void decode(SimpleBuffer *sb);
+    void encode(SimpleBuffer& sb);
+    void decode(SimpleBuffer& sb);
     uint16_t size();
     void print();
 
@@ -112,8 +112,8 @@ public:
     virtual ~PMTHeader();
 
 public:
-    void encode(SimpleBuffer *sb);
-    void decode(SimpleBuffer *sb);
+    void encode(SimpleBuffer& sb);
+    void decode(SimpleBuffer& sb);
     uint16_t size();
     void print();
 
@@ -143,8 +143,8 @@ public:
     virtual ~AdaptationFieldHeader();
 
 public:
-    void encode(SimpleBuffer *sb);
-    void decode(SimpleBuffer *sb);
+    void encode(SimpleBuffer& sb);
+    void decode(SimpleBuffer& sb);
 
 public:
     uint8_t adaptation_field_length;                // 8 bits
@@ -165,8 +165,8 @@ public:
     virtual ~PESHeader();
 
 public:
-    void encode(SimpleBuffer *sb);
-    void decode(SimpleBuffer *sb);
+    void encode(SimpleBuffer& sb);
+    void decode(SimpleBuffer& sb);
 
 public:
     uint32_t packet_start_code;             // 24 bits

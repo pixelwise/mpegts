@@ -15,10 +15,10 @@ MpegTsDemuxer::~MpegTsDemuxer()
 {
 }
 
-std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer *in)
+std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer& in)
 {
-    while (!in->empty()) {
-        int pos = in->pos();
+    while (!in.empty()) {
+        int pos = in.pos();
         TsHeader ts_header;
         ts_header.decode(in);
 
@@ -28,18 +28,18 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer *in)
                 ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_adaption_both) {
                 AdaptationFieldHeader adapt_field;
                 adapt_field.decode(in);
-                in->skip(adapt_field.adaptation_field_length > 0 ? (adapt_field.adaptation_field_length - 1) : 0);
+                in.skip(adapt_field.adaptation_field_length > 0 ? (adapt_field.adaptation_field_length - 1) : 0);
             }
 
             if (ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_only ||
                 ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_adaption_both) {
                 if (ts_header.payload_unit_start_indicator == 0x01) {
-                    /*uint8_t point_field = */in->read_1byte();
+                    /*uint8_t point_field = */in.read_1byte();
                 }
                 PATHeader pat_header;
                 pat_header.decode(in);
-                in->read_2bytes();
-                pmt_id = in->read_2bytes() & 0x1fff;
+                in.read_2bytes();
+                pmt_id = in.read_2bytes() & 0x1fff;
                 pat_header.print();
             }
         }
@@ -50,11 +50,11 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer *in)
                 ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_adaption_both) {
                 AdaptationFieldHeader adapt_field;
                 adapt_field.decode(in);
-                in->skip(adapt_field.adaptation_field_length > 0 ? (adapt_field.adaptation_field_length - 1) : 0);
+                in.skip(adapt_field.adaptation_field_length > 0 ? (adapt_field.adaptation_field_length - 1) : 0);
             }
 
             if (ts_header.payload_unit_start_indicator == 0x01) {
-                uint8_t point_field = in->read_1byte();
+                /*uint8_t point_field =*/ in.read_1byte();
                 PMTHeader pmt_header;
                 pmt_header.decode(in);
                 _pcr_id = pmt_header.PCR_PID;
@@ -80,7 +80,7 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer *in)
                     // just adjust buffer pos
                     adflength -= 6;
                 }
-                in->skip(adflength > 0 ? (adflength - 1) : 0);
+                in.skip(adflength > 0 ? (adflength - 1) : 0);
             }
 
             if (ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_only ||
@@ -95,7 +95,7 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer *in)
                         _ts_frames[ts_header.pid]->completed = true;
                         _ts_frames[ts_header.pid]->pid = ts_header.pid;
                         // got the frame, reset pos
-                        in->skip(pos - in->pos());
+                        in.skip(pos - in.pos());
                         return _ts_frames[ts_header.pid];
                     }
 
@@ -110,19 +110,19 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer *in)
                     }
                     if (pes_header.pes_packet_length != 0) {
                         if ((pes_header.pes_packet_length - 3 - pes_header.header_data_length) >= 188 || (pes_header.pes_packet_length - 3 - pes_header.header_data_length) < 0) {
-                            _ts_frames[ts_header.pid]->_data->append(in->data() + in->pos(), 188 - (in->pos() - pos));
+                            _ts_frames[ts_header.pid]->_data->append(in.data() + in.pos(), 188 - (in.pos() - pos));
                         } else {
-                            _ts_frames[ts_header.pid]->_data->append(in->data() + in->pos(), pes_header.pes_packet_length - 3 - pes_header.header_data_length);
+                            _ts_frames[ts_header.pid]->_data->append(in.data() + in.pos(), pes_header.pes_packet_length - 3 - pes_header.header_data_length);
                         }
-                        in->skip(188 - (in->pos() - pos));
+                        in.skip(188 - (in.pos() - pos));
                         continue;
                     }
                 }
                 
-                if(_ts_frames[ts_header.pid]->expected_pes_packet_length != 0 && _ts_frames[ts_header.pid]->_data->size() + 188 - (in->pos() - pos) > _ts_frames[ts_header.pid]->expected_pes_packet_length) {
-                    _ts_frames[ts_header.pid]->_data->append(in->data() + in->pos(), _ts_frames[ts_header.pid]->expected_pes_packet_length - _ts_frames[ts_header.pid]->_data->size());
+                if(_ts_frames[ts_header.pid]->expected_pes_packet_length != 0 && _ts_frames[ts_header.pid]->_data->size() + 188 - (in.pos() - pos) > _ts_frames[ts_header.pid]->expected_pes_packet_length) {
+                    _ts_frames[ts_header.pid]->_data->append(in.data() + in.pos(), _ts_frames[ts_header.pid]->expected_pes_packet_length - _ts_frames[ts_header.pid]->_data->size());
                 } else {
-                    _ts_frames[ts_header.pid]->_data->append(in->data() + in->pos(), 188 - (in->pos() - pos));
+                    _ts_frames[ts_header.pid]->_data->append(in.data() + in.pos(), 188 - (in.pos() - pos));
                 }
             }
         } else if (_pcr_id != 0 && _pcr_id == ts_header.pid) {
@@ -131,10 +131,10 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer *in)
             uint64_t pcr = read_pcr(in);
         }
 
-        in->skip(188 - (in->pos() - pos));
+        in.skip(188 - (in.pos() - pos));
     }
 
-    in->clear();
+    in.clear();
 
     return 0;
 }

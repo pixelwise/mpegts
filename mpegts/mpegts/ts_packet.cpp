@@ -49,33 +49,33 @@ TsHeader::~TsHeader()
 {
 }
 
-void TsHeader::encode(SimpleBuffer *sb)
+void TsHeader::encode(SimpleBuffer& sb)
 {
-    sb->write_1byte(sync_byte);
+    sb.write_1byte(sync_byte);
 
     uint16_t b1b2 = pid & 0x1FFF;
     b1b2 |= (transport_priority << 13) & 0x2000;
     b1b2 |= (payload_unit_start_indicator << 14) & 0x4000;
     b1b2 |= (transport_error_indicator << 15) & 0x8000;
-    sb->write_2bytes(b1b2);
+    sb.write_2bytes(b1b2);
 
     uint8_t b3 = continuity_counter & 0x0F;
     b3 |= (adaptation_field_control << 4) & 0x30;
     b3 |= (transport_scrambling_control << 6) & 0xC0;
-    sb->write_1byte(b3);
+    sb.write_1byte(b3);
 }
 
-void TsHeader::decode(SimpleBuffer *sb)
+void TsHeader::decode(SimpleBuffer& sb)
 {
-    sync_byte = sb->read_1byte();
+    sync_byte = sb.read_1byte();
 
-    uint16_t b1b2 = sb->read_2bytes();
+    uint16_t b1b2 = sb.read_2bytes();
     pid = b1b2 & 0x1FFF;
     transport_error_indicator = (b1b2 >> 13) & 0x01;
     payload_unit_start_indicator = (b1b2 >> 14) & 0x01;
     transport_error_indicator = (b1b2 >> 15) & 0x01;
 
-    uint8_t b3 = sb->read_1byte();
+    uint8_t b3 = sb.read_1byte();
     continuity_counter = b3 & 0x0F;
     adaptation_field_control = (b3 >> 4) & 0x03;
     transport_scrambling_control = (b3 >> 6) & 0x03;
@@ -102,46 +102,46 @@ PATHeader::~PATHeader()
 
 }
 
-void PATHeader::encode(SimpleBuffer *sb)
+void PATHeader::encode(SimpleBuffer& sb)
 {
-    sb->write_1byte(table_id);
+    sb.write_1byte(table_id);
 
     uint16_t b1b2 = section_length & 0x0FFF;
     b1b2 |= (reserved0 << 12) & 0x3000;
     b1b2 |= (b0 << 14) & 0x4000;
     b1b2 |= (section_syntax_indicator << 15) & 0x8000;
-    sb->write_2bytes(b1b2);
+    sb.write_2bytes(b1b2);
 
-    sb->write_2bytes(transport_stream_id);
+    sb.write_2bytes(transport_stream_id);
 
     uint8_t b5 = current_next_indicator & 0x01;
     b5 |= (version_number << 1) & 0x3E;
     b5 |= (reserved1 << 6) & 0xC0;
-    sb->write_1byte(b5);
+    sb.write_1byte(b5);
 
-    sb->write_1byte(section_number);
-    sb->write_1byte(last_section_number);
+    sb.write_1byte(section_number);
+    sb.write_1byte(last_section_number);
 }
 
-void PATHeader::decode(SimpleBuffer *sb)
+void PATHeader::decode(SimpleBuffer& sb)
 {
-    table_id = sb->read_1byte();
+    table_id = sb.read_1byte();
 
-    uint16_t b1b2 = sb->read_2bytes();
+    uint16_t b1b2 = sb.read_2bytes();
     section_syntax_indicator = (b1b2 >> 15) & 0x01;
     b0 = (b1b2 >> 14) & 0x01;
     section_length = b1b2 & 0x0FFF;
 
-    transport_stream_id = sb->read_2bytes();
+    transport_stream_id = sb.read_2bytes();
 
-    uint8_t b5 = sb->read_1byte();
+    uint8_t b5 = sb.read_1byte();
     reserved1 = (b5 >> 6) & 0x03;
     version_number = (b5 >> 1) & 0x1F;
     current_next_indicator = b5 & 0x01;
 
-    section_number = sb->read_1byte();
+    section_number = sb.read_1byte();
 
-    last_section_number = sb->read_1byte();
+    last_section_number = sb.read_1byte();
 }
 
 void PATHeader::print()
@@ -183,37 +183,37 @@ PMTElementInfo::~PMTElementInfo()
 
 }
 
-void PMTElementInfo::encode(SimpleBuffer *sb)
+void PMTElementInfo::encode(SimpleBuffer& sb)
 {
-    sb->write_1byte(stream_type);
+    sb.write_1byte(stream_type);
 
     uint16_t b1b2 = elementary_PID & 0x1FFF;
     b1b2 |= (reserved0 << 13) & 0xE000;
-    sb->write_2bytes(b1b2);
+    sb.write_2bytes(b1b2);
 
     int16_t b3b4 = ES_info_length & 0x0FFF;
     b3b4 |= (reserved1 << 12) & 0xF000;
-    sb->write_2bytes(b3b4);
+    sb.write_2bytes(b3b4);
 
     if (ES_info_length > 0) {
         // TODO:
     }
 }
 
-void PMTElementInfo::decode(SimpleBuffer *sb)
+void PMTElementInfo::decode(SimpleBuffer& sb)
 {
-    stream_type = sb->read_1byte();
+    stream_type = sb.read_1byte();
 
-    uint16_t b1b2 = sb->read_2bytes();
+    uint16_t b1b2 = sb.read_2bytes();
     reserved0 = (b1b2 >> 13) & 0x07;
     elementary_PID = b1b2 & 0x1FFF;
 
-    uint16_t b3b4 = sb->read_2bytes();
+    uint16_t b3b4 = sb.read_2bytes();
     reserved1 = (b3b4 >> 12) & 0xF;
     ES_info_length = b3b4 & 0xFFF;
 
     if (ES_info_length > 0) {
-        ES_info = sb->read_string(ES_info_length);
+        ES_info = sb.read_string(ES_info_length);
     }
 }
 
@@ -259,69 +259,69 @@ PMTHeader::~PMTHeader()
 
 }
 
-void PMTHeader::encode(SimpleBuffer *sb)
+void PMTHeader::encode(SimpleBuffer& sb)
 {
-    sb->write_1byte(table_id);
+    sb.write_1byte(table_id);
 
     uint16_t b1b2 = section_length & 0xFFFF;
     b1b2 |= (reserved0 << 12) & 0x3000;
     b1b2 |= (b0 << 14) & 0x4000;
     b1b2 |= (section_syntax_indicator << 15) & 0x8000;
-    sb->write_2bytes(b1b2);
+    sb.write_2bytes(b1b2);
 
-    sb->write_2bytes(program_number);
+    sb.write_2bytes(program_number);
 
     uint8_t b5 = current_next_indicator & 0x01;
     b5 |= (version_number << 1) & 0x3E;
     b5 |= (reserved1 << 6) & 0xC0;
-    sb->write_1byte(b5);
+    sb.write_1byte(b5);
 
-    sb->write_1byte(section_number);
-    sb->write_1byte(last_section_number);
+    sb.write_1byte(section_number);
+    sb.write_1byte(last_section_number);
 
     uint16_t b8b9 = PCR_PID & 0x1FFF;
     b8b9 |= (reserved2 << 13) & 0xE000;
-    sb->write_2bytes(b8b9);
+    sb.write_2bytes(b8b9);
 
     uint16_t b10b11 = program_info_length & 0xFFF;
     b10b11 |= (reserved3 << 12) & 0xF000;
-    sb->write_2bytes(b10b11);
+    sb.write_2bytes(b10b11);
 
     for (int i = 0; i < (int)infos.size(); i++) {
         infos[i]->encode(sb);
     }
 }
 
-void PMTHeader::decode(SimpleBuffer *sb)
+void PMTHeader::decode(SimpleBuffer& sb)
 {
-    table_id = sb->read_1byte();
+    table_id = sb.read_1byte();
 
-    uint16_t b1b2 = sb->read_2bytes();
+    uint16_t b1b2 = sb.read_2bytes();
     section_syntax_indicator = (b1b2 >> 15) & 0x01;
     b0 = (b1b2 >> 14) & 0x01;
     reserved0 = (b1b2 >> 12) & 0x03;
     section_length = b1b2 & 0xFFF;
 
-    program_number = sb->read_2bytes();
+    program_number = sb.read_2bytes();
 
-    uint8_t b5 = sb->read_1byte();
+    uint8_t b5 = sb.read_1byte();
     reserved1 = (b5 >> 6) & 0x03;
     version_number = (b5 >> 1) & 0x1F;
     current_next_indicator = b5 & 0x01;
 
-    section_number = sb->read_1byte();
-    last_section_number = sb->read_1byte();
+    section_number = sb.read_1byte();
+    last_section_number = sb.read_1byte();
 
-    uint16_t b8b9 = sb->read_2bytes();
+    uint16_t b8b9 = sb.read_2bytes();
     reserved2 = (b8b9 >> 13) & 0x07;
     PCR_PID = b8b9 & 0x1FFF;
 
-    uint16_t b10b11 = sb->read_2bytes();
+    uint16_t b10b11 = sb.read_2bytes();
     reserved3 = (b10b11 >> 12) & 0xF;
     program_info_length = b10b11 & 0xFFF;
 
     if (program_info_length > 0) {
-        sb->read_string(program_info_length);
+        sb.read_string(program_info_length);
     }
 
     int remain_bytes = section_length - 4 - 9 - program_info_length;
@@ -387,9 +387,9 @@ AdaptationFieldHeader::~AdaptationFieldHeader()
 
 }
 
-void AdaptationFieldHeader::encode(SimpleBuffer *sb)
+void AdaptationFieldHeader::encode(SimpleBuffer& sb)
 {
-    sb->write_1byte(adaptation_field_length);
+    sb.write_1byte(adaptation_field_length);
     if (adaptation_field_length != 0) {
         uint8_t val = adaptation_field_extension_flag & 0x01;
         val |= (transport_private_data_flag << 1) & 0x02;
@@ -399,15 +399,15 @@ void AdaptationFieldHeader::encode(SimpleBuffer *sb)
         val |= (elementary_stream_priority_indicator << 5) & 0x20;
         val |= (random_access_indicator << 6) & 0x40;
         val |= (discontinuity_indicator << 7) & 0x80;
-        sb->write_1byte(val);
+        sb.write_1byte(val);
     }
 }
 
-void AdaptationFieldHeader::decode(SimpleBuffer *sb)
+void AdaptationFieldHeader::decode(SimpleBuffer& sb)
 {
-    adaptation_field_length = sb->read_1byte();
+    adaptation_field_length = sb.read_1byte();
     if (adaptation_field_length != 0) {
-        uint8_t val = sb->read_1byte();
+        uint8_t val = sb.read_1byte();
         adaptation_field_extension_flag = val & 0x01;
         transport_private_data_flag = (val >> 1) & 0x01;
         splicing_point_flag = (val >> 2) & 0x01;
@@ -446,13 +446,13 @@ PESHeader::~PESHeader()
 
 }
 
-void PESHeader::encode(SimpleBuffer *sb)
+void PESHeader::encode(SimpleBuffer& sb)
 {
     uint32_t b0b1b2b3 = (packet_start_code << 8) & 0xFFFFFF00;
     b0b1b2b3 |= stream_id & 0xFF;
-    sb->write_4bytes(b0b1b2b3);
+    sb.write_4bytes(b0b1b2b3);
 
-    sb->write_2bytes(pes_packet_length);
+    sb.write_2bytes(pes_packet_length);
 
     uint8_t b6 = original_or_copy & 0x01;
     b6 |= (copyright << 1) & 0x02;
@@ -460,7 +460,7 @@ void PESHeader::encode(SimpleBuffer *sb)
     b6 |= (pes_priority << 3) & 0x08;
     b6 |= (pes_scrambling_control << 4) & 0x30;
     b6 |= (marker_bits << 6) & 0xC0;
-    sb->write_1byte(b6);
+    sb.write_1byte(b6);
 
     uint8_t b7 = pes_ext_flag & 0x01;
     b7 |= (pes_crc_flag << 1) & 0x02;
@@ -469,20 +469,20 @@ void PESHeader::encode(SimpleBuffer *sb)
     b7 |= (es_rate_flag << 4) & 0x10;
     b7 |= (escr_flag << 5) & 0x20;
     b7 |= (pts_dts_flags << 6) & 0xC0;
-    sb->write_1byte(b7);
+    sb.write_1byte(b7);
 
-    sb->write_1byte(header_data_length);
+    sb.write_1byte(header_data_length);
 }
 
-void PESHeader::decode(SimpleBuffer *sb)
+void PESHeader::decode(SimpleBuffer& sb)
 {
-    uint32_t b0b1b2b3 = sb->read_4bytes();
+    uint32_t b0b1b2b3 = sb.read_4bytes();
     packet_start_code = (b0b1b2b3 >> 8) & 0x00FFFFFF;
     stream_id = (b0b1b2b3) & 0xFF;
 
-    pes_packet_length = sb->read_2bytes();
+    pes_packet_length = sb.read_2bytes();
 
-    uint8_t b6 = sb->read_1byte();
+    uint8_t b6 = sb.read_1byte();
     original_or_copy = b6 & 0x01;
     copyright = (b6 >> 1) & 0x01;
     data_alignment_indicator = (b6 >> 2) & 0x01;
@@ -490,7 +490,7 @@ void PESHeader::decode(SimpleBuffer *sb)
     pes_scrambling_control = (b6 >> 4) & 0x03;
     marker_bits = (b6 >> 6) & 0x03;
 
-    uint8_t b7 = sb->read_1byte();
+    uint8_t b7 = sb.read_1byte();
     pes_ext_flag = b7 & 0x01;
     pes_crc_flag = (b7 >> 1) & 0x01;
     add_copy_info_flag = (b7 >> 2) & 0x01;
@@ -499,5 +499,5 @@ void PESHeader::decode(SimpleBuffer *sb)
     escr_flag = (b7 >> 5) & 0x01;
     pts_dts_flags = (b7 >> 6) & 0x03;
 
-    header_data_length = sb->read_1byte();
+    header_data_length = sb.read_1byte();
 }

@@ -18,7 +18,7 @@ MpegTsMuxer::~MpegTsMuxer()
 {
 }
 
-void MpegTsMuxer::create_pat(SimpleBuffer *sb, uint16_t pmt_pid, uint8_t cc)
+void MpegTsMuxer::create_pat(SimpleBuffer& sb, uint16_t pmt_pid, uint8_t cc)
 {
     SimpleBuffer pat_sb;
     TsHeader ts_header;
@@ -53,9 +53,9 @@ void MpegTsMuxer::create_pat(SimpleBuffer *sb, uint16_t pmt_pid, uint8_t cc)
     unsigned int section_length = 4 + 4 + 5;
     pat_header.section_length = section_length & 0x3ff;
 
-    ts_header.encode(&pat_sb);
-    adapt_field.encode(&pat_sb);
-    pat_header.encode(&pat_sb);
+    ts_header.encode(pat_sb);
+    adapt_field.encode(pat_sb);
+    pat_header.encode(pat_sb);
     pat_sb.write_2bytes(program_number);
     pat_sb.write_2bytes(program_map_PID);
 
@@ -66,10 +66,10 @@ void MpegTsMuxer::create_pat(SimpleBuffer *sb, uint16_t pmt_pid, uint8_t cc)
     std::string stuff(188 - pat_sb.size(), 0xff);
     pat_sb.write_string(stuff);
 
-    sb->append(pat_sb.data(), pat_sb.size());
+    sb.append(pat_sb.data(), pat_sb.size());
 }
 
-void MpegTsMuxer::create_pmt(SimpleBuffer *sb, std::map<uint8_t, int> stream_pid_map, uint16_t pmt_pid, uint8_t cc)
+void MpegTsMuxer::create_pmt(SimpleBuffer& sb, std::map<uint8_t, int> stream_pid_map, uint16_t pmt_pid, uint8_t cc)
 {
     SimpleBuffer pmt_sb;
     TsHeader ts_header;
@@ -109,9 +109,9 @@ void MpegTsMuxer::create_pmt(SimpleBuffer *sb, std::map<uint8_t, int> stream_pid
     uint16_t section_length = pmt_header.size() - 3 + 4;
     pmt_header.section_length = section_length & 0x3ff;
 
-    ts_header.encode(&pmt_sb);
-    adapt_field.encode(&pmt_sb);
-    pmt_header.encode(&pmt_sb);
+    ts_header.encode(pmt_sb);
+    adapt_field.encode(pmt_sb);
+    pmt_header.encode(pmt_sb);
 
     // crc32
     uint32_t crc_32 = crc32((uint8_t *)pmt_sb.data() + 5, pmt_sb.size() - 5);
@@ -120,10 +120,10 @@ void MpegTsMuxer::create_pmt(SimpleBuffer *sb, std::map<uint8_t, int> stream_pid
     std::string stuff(188 - pmt_sb.size(), 0xff);
     pmt_sb.write_string(stuff);
 
-    sb->append(pmt_sb.data(), pmt_sb.size());
+    sb.append(pmt_sb.data(), pmt_sb.size());
 }
 
-void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer *sb)
+void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer& sb)
 {
     bool first = true;
     while (!frame->_data->empty()) {
@@ -143,11 +143,11 @@ void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer *sb)
                 adapt_field_header.random_access_indicator = 0x01;
                 adapt_field_header.pcr_flag = 0x01;
 
-                ts_header.encode(&packet);
-                adapt_field_header.encode(&packet);
-                write_pcr(&packet, frame->dts);
+                ts_header.encode(packet);
+                adapt_field_header.encode(packet);
+                write_pcr(packet, frame->dts);
             } else {
-                ts_header.encode(&packet);
+                ts_header.encode(packet);
             }
 
             PESHeader pes_header;
@@ -166,17 +166,17 @@ void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer *sb)
 
             uint32_t pes_size = (pes_header.header_data_length + frame->_data->size() + 3);
             pes_header.pes_packet_length = pes_size > 0xffff ? 0 : pes_size;
-            pes_header.encode(&packet);
+            pes_header.encode(packet);
 
            if (pes_header.pts_dts_flags == 0x03) {
-               write_pts(&packet, 3, frame->pts);
-               write_pts(&packet, 1, frame->dts);
+               write_pts(packet, 3, frame->pts);
+               write_pts(packet, 1, frame->dts);
            } else {
-               write_pts(&packet, 2, frame->pts);
+               write_pts(packet, 2, frame->pts);
            }
             first = false;
         } else {
-            ts_header.encode(&packet);
+            ts_header.encode(packet);
         }
 
         uint32_t pos = packet.size();
@@ -212,11 +212,11 @@ void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer *sb)
              packet.set_data(packet.pos(), body_string.c_str(), body_string.length());
          }
 
-        sb->append(packet.data(), packet.size());
+        sb.append(packet.data(), packet.size());
     }
 }
 
-void MpegTsMuxer::create_pcr(SimpleBuffer *sb)
+void MpegTsMuxer::create_pcr(SimpleBuffer& sb)
 {
     uint64_t pcr = 0;
     TsHeader ts_header;
@@ -240,13 +240,13 @@ void MpegTsMuxer::create_pcr(SimpleBuffer *sb)
     adapt_field.transport_private_data_flag = 0;
     adapt_field.adaptation_field_extension_flag = 0;
 
-    //char *p = sb->data();
+    //char *p = sb.data();
     ts_header.encode(sb);
     adapt_field.encode(sb);
     write_pcr(sb, pcr);
 }
 
-void MpegTsMuxer::create_null(SimpleBuffer *sb)
+void MpegTsMuxer::create_null(SimpleBuffer& sb)
 {
     TsHeader ts_header;
     ts_header.sync_byte = 0x47;
@@ -260,7 +260,7 @@ void MpegTsMuxer::create_null(SimpleBuffer *sb)
     ts_header.encode(sb);
 }
 
-void MpegTsMuxer::encode(const TsFrame *frame, std::map<uint8_t, int> stream_pid_map, uint16_t pmt_pid, SimpleBuffer *sb)
+void MpegTsMuxer::encode(const TsFrame *frame, std::map<uint8_t, int> stream_pid_map, uint16_t pmt_pid, SimpleBuffer& sb)
 {
     if (should_create_pat()) {
         uint8_t pat_pmt_cc = get_cc(0);
