@@ -28,7 +28,7 @@ void write_file(const TsFrame *frame)
 
 int main(int argc, char *argv[])
 {
-    if (argc <= 3) {
+    if (argc != 3) {
         std::cout << "usage: " << argv[0] << " <in>.ts <out>.ts" << std::endl;
         return 0;
     }
