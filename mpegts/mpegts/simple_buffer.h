@@ -34,7 +34,7 @@ public:
     void skip(int size);
     bool require(int required_size);
     bool empty();
-    int size();
+    size_t size();
     int pos();
     char *data();
     void clear();

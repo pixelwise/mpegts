@@ -170,7 +170,7 @@ bool SimpleBuffer::empty()
     return _pos >= _data.size();
 }
 
-int SimpleBuffer::size()
+size_t SimpleBuffer::size()
 {
     return _data.size();
 }
