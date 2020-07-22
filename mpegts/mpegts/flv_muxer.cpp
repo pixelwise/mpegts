@@ -92,7 +92,7 @@ int FLVMuxer::write_header(SimpleBuffer *sb)
     return 0;
 }
 
-int FLVMuxer::write_body(TsFrame *frame, SimpleBuffer *sb)
+int FLVMuxer::write_body(const TsFrame *frame, SimpleBuffer *sb)
 {
     if (frame->stream_type == MpegTsStream::AAC) {
         write_aac_tag(frame, sb);
@@ -105,7 +105,7 @@ int FLVMuxer::write_body(TsFrame *frame, SimpleBuffer *sb)
     return 0;
 }
 
-int FLVMuxer::write_aac_tag(TsFrame *frame, SimpleBuffer *sb)
+int FLVMuxer::write_aac_tag(const TsFrame *frame, SimpleBuffer *sb)
 {
     uint32_t bodySize = 2 + frame->_data->size();
     uint32_t pts = frame->pts / 90;
@@ -122,7 +122,7 @@ int FLVMuxer::write_aac_tag(TsFrame *frame, SimpleBuffer *sb)
     return 0;
 }
 
-int FLVMuxer::write_avc_tag(TsFrame *frame, SimpleBuffer *sb)
+int FLVMuxer::write_avc_tag(const TsFrame *frame, SimpleBuffer *sb)
 {
     int index = 0;
     uint32_t pts = frame->pts / 90;

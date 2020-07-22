@@ -9,7 +9,7 @@
 
 std::map<uint16_t, std::ofstream*> file_map;
 
-void write_file(TsFrame *frame)
+void write_file(const TsFrame *frame)
 {
     if (!frame)
         return;
@@ -64,13 +64,12 @@ int main(int argc, char *argv[])
         ifile.read(packet, 188);
         in.append(packet, 188);
 
-        TsFrame *frame = nullptr;
-        demuxer.decode(&in, frame);
+        auto frame = demuxer.decode(&in);
 
-        write_file(frame);
+        write_file(frame.get());
         if (frame) {
-            muxer->encode(frame, demuxer.stream_pid_map, demuxer.pmt_id, &out);
-            flvMuxer->write_body(frame, &flvOutBuffer);
+            muxer->encode(frame.get(), demuxer.stream_pid_map, demuxer.pmt_id, &out);
+            flvMuxer->write_body(frame.get(), &flvOutBuffer);
             outflv.write(flvOutBuffer.data(), flvOutBuffer.size());
             flvOutBuffer.clear();
             outts.write(out.data(), out.size());

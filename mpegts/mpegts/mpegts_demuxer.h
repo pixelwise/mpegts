@@ -14,7 +14,7 @@ public:
     virtual ~MpegTsDemuxer();
 
 public:
-    int decode(SimpleBuffer *in, TsFrame *&out);
+    std::shared_ptr<const TsFrame> decode(SimpleBuffer *in);
     // stream, pid
     std::map<uint8_t, int> stream_pid_map;
     int pmt_id;

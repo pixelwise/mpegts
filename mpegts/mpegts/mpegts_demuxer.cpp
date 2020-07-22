@@ -15,7 +15,7 @@ MpegTsDemuxer::~MpegTsDemuxer()
 {
 }
 
-int MpegTsDemuxer::decode(SimpleBuffer *in, TsFrame *&out)
+std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer *in)
 {
     while (!in->empty()) {
         int pos = in->pos();
@@ -34,7 +34,7 @@ int MpegTsDemuxer::decode(SimpleBuffer *in, TsFrame *&out)
             if (ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_only ||
                 ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_adaption_both) {
                 if (ts_header.payload_unit_start_indicator == 0x01) {
-                    uint8_t point_field = in->read_1byte();
+                    /*uint8_t point_field = */in->read_1byte();
                 }
                 PATHeader pat_header;
                 pat_header.decode(in);
@@ -94,10 +94,9 @@ int MpegTsDemuxer::decode(SimpleBuffer *in, TsFrame *&out)
                     if (!_ts_frames[ts_header.pid]->empty()) {
                         _ts_frames[ts_header.pid]->completed = true;
                         _ts_frames[ts_header.pid]->pid = ts_header.pid;
-                        out = _ts_frames[ts_header.pid].get();
                         // got the frame, reset pos
                         in->skip(pos - in->pos());
-                        return _ts_frames[ts_header.pid]->stream_type;
+                        return _ts_frames[ts_header.pid];
                     }
 
                     pes_header.decode(in);
