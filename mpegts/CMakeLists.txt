@@ -47,4 +47,4 @@ target_link_libraries(
     mpegts
 )
 
-set_target_properties(mpegts_unit_test PROPERTIES EXCLUDE_FROM_ALL TRUE)
+#set_target_properties(mpegts_unit_test PROPERTIES EXCLUDE_FROM_ALL TRUE)

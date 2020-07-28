@@ -37,7 +37,7 @@ void UnitTest6::dmxOutputPcr(uint64_t lPcr) {
     }
 }
 
-void UnitTest6::dmxOutputPtsDts(TsFrame *pEs) {
+void UnitTest6::dmxOutputPtsDts(const TsFrame *pEs) {
     if (pts != pEs->pts) {
         std::cout << "PTS mismatch." << std::endl;
         mUnitTestStatus = false;
@@ -60,7 +60,7 @@ void UnitTest6::dmxOutputPtsDts(TsFrame *pEs) {
     mFrameInTransit = false;
 }
 
-void UnitTest6::dmxOutputPts(TsFrame *pEs){
+void UnitTest6::dmxOutputPts(const TsFrame *pEs){
 
     if (pts != pEs->pts) {
         std::cout << "PTS missmatch." << std::endl;
@@ -79,7 +79,7 @@ void UnitTest6::dmxOutputPts(TsFrame *pEs){
 
 }
 
-void UnitTest6::muxOutput(SimpleBuffer &rTsOutBuffer) {
+void UnitTest6::muxOutputPts(SimpleBuffer &rTsOutBuffer) {
     //Double to fail at non integer data
     double packets = (double) rTsOutBuffer.size() / 188.0;
     if (packets != (int) packets) {
@@ -87,24 +87,60 @@ void UnitTest6::muxOutput(SimpleBuffer &rTsOutBuffer) {
         mUnitTestStatus = false;
     }
 
-    uint8_t* lpData = rTsOutBuffer.data();
+    auto lpData = rTsOutBuffer.data();
 
     for (int lI = 0 ; lI < packets ; lI++) {
         SimpleBuffer lIn;
         lIn.append(lpData+(lI*188), 188);
-        mDemuxer.decode(lIn);
+        if (auto frame = mDemuxer.decode(lIn))
+            dmxOutputPts(frame.get());
     }
 }
 
+void UnitTest6::muxOutputPtsDts(SimpleBuffer &rTsOutBuffer) {
+    //Double to fail at non integer data
+    double packets = (double) rTsOutBuffer.size() / 188.0;
+    if (packets != (int) packets) {
+        std::cout << "Payload not X * 188 " << std::endl;
+        mUnitTestStatus = false;
+    }
+
+    auto lpData = rTsOutBuffer.data();
+
+    for (int lI = 0 ; lI < packets ; lI++) {
+        SimpleBuffer lIn;
+        lIn.append(lpData+(lI*188), 188);
+        if (auto frame = mDemuxer.decode(lIn))
+            dmxOutputPtsDts(frame.get());
+    }
+}
+
+void UnitTest6::muxOutputPtsDtsPcr(SimpleBuffer &rTsOutBuffer) {
+    //Double to fail at non integer data
+    double packets = (double) rTsOutBuffer.size() / 188.0;
+    if (packets != (int) packets) {
+        std::cout << "Payload not X * 188 " << std::endl;
+        mUnitTestStatus = false;
+    }
+
+    auto lpData = rTsOutBuffer.data();
+
+    for (int lI = 0 ; lI < packets ; lI++) {
+        SimpleBuffer lIn;
+        lIn.append(lpData+(lI*188), 188);
+        if (auto frame = mDemuxer.decode(lIn, [this](auto pcr){dmxOutputPcr(pcr);}))
+            dmxOutputPtsDts(frame.get());
+    }
+}
+
+
 bool UnitTest6::runTest() {
 
-    mDemuxer.esOutCallback = std::bind(&UnitTest6::dmxOutputPts, this, std::placeholders::_1);
 
     uint8_t testVector[TEST_VECTOR_SIZE];
     std::map<uint8_t, int> gStreamPidMap;
     gStreamPidMap[TYPE_VIDEO] = VIDEO_PID;
-    mpMuxer = new MpegTsMuxer(gStreamPidMap, PMT_PID, PCR_PID);
-    mpMuxer->tsOutCallback = std::bind(&UnitTest6::muxOutput, this, std::placeholders::_1);
+    mpMuxer = new MpegTsMuxer;
 
     //Make Vector
     for (int x = 0; x < TEST_VECTOR_SIZE; x++) {
@@ -117,6 +153,7 @@ bool UnitTest6::runTest() {
 
     //Send frames only containing PTS
     for (int x = 1; x < NUM_FRAMES_LOOP; x++) {
+        SimpleBuffer buffer;
         TsFrame lEsFrame;
         lEsFrame.data = std::make_shared<SimpleBuffer>();
         lEsFrame.data->append((const uint8_t *)&testVector[0], TEST_VECTOR_SIZE);
@@ -130,7 +167,8 @@ bool UnitTest6::runTest() {
         lEsFrame.random_access_indicator = 1;
         lEsFrame.completed = true;
         mFrameInTransit = true;
-        mpMuxer->encode(lEsFrame);
+        mpMuxer->encode(lEsFrame, gStreamPidMap, VIDEO_PID, buffer);
+        muxOutputPts(buffer);
         if (mFrameInTransit) {
             std::cout << "Frame " << unsigned(x) << " not muxed/demuxed corectly" << std::endl;
             mUnitTestStatus = false;
@@ -138,11 +176,9 @@ bool UnitTest6::runTest() {
         pts += 1920;
     }
 
-    //Flip the callback to analyze DTS also
-    mDemuxer.esOutCallback = std::bind(&UnitTest6::dmxOutputPtsDts, this, std::placeholders::_1);
-
     //Send frames containing PTS / DTS
     for (int x = 1; x < NUM_FRAMES_LOOP; x++) {
+        SimpleBuffer buffer;
         TsFrame lEsFrame;
         lEsFrame.data = std::make_shared<SimpleBuffer>();
         lEsFrame.data->append((const uint8_t *)&testVector[0], TEST_VECTOR_SIZE);
@@ -156,7 +192,8 @@ bool UnitTest6::runTest() {
         lEsFrame.random_access_indicator = 1;
         lEsFrame.completed = true;
         mFrameInTransit = true;
-        mpMuxer->encode(lEsFrame);
+        mpMuxer->encode(lEsFrame, gStreamPidMap, VIDEO_PID, buffer);
+        muxOutputPtsDts(buffer);
         if (mFrameInTransit) {
             std::cout << "Frame " << unsigned(x) << " not muxed/demuxed corectly" << std::endl;
             mUnitTestStatus = false;
@@ -166,10 +203,9 @@ bool UnitTest6::runTest() {
     }
 
 
-    mDemuxer.pcrOutCallback = std::bind(&UnitTest6::dmxOutputPcr, this, std::placeholders::_1);
-
     //Send frames containing PTS / DTS then also send out of band PCR
     for (int x = 1; x < NUM_FRAMES_LOOP; x++) {
+        SimpleBuffer buffer;
         TsFrame lEsFrame;
         lEsFrame.data = std::make_shared<SimpleBuffer>();
         lEsFrame.data->append((const uint8_t *)&testVector[0], TEST_VECTOR_SIZE);
@@ -183,8 +219,11 @@ bool UnitTest6::runTest() {
         lEsFrame.random_access_indicator = 1;
         lEsFrame.completed = true;
         mFrameInTransit = true;
-        mpMuxer->encode(lEsFrame);
-        mpMuxer->createPcr(pts+dts+pcr);
+        mpMuxer->encode(lEsFrame, gStreamPidMap, VIDEO_PID, buffer);
+        muxOutputPtsDtsPcr(buffer);
+        buffer.clear();
+        mpMuxer->create_pcr(buffer, pts+dts+pcr);
+        muxOutputPtsDtsPcr(buffer);
         if (mFrameInTransit) {
             std::cout << "Frame " << unsigned(x) << " not muxed/demuxed corectly" << std::endl;
             mUnitTestStatus = false;
@@ -199,11 +238,11 @@ bool UnitTest6::runTest() {
     //So we delete the old muxer and create a new one using the video pid as PCR pid
     //That means that the PCR will be taken from the Elementary stream data.
     delete mpMuxer;
-    mpMuxer = new MpegTsMuxer(gStreamPidMap, PMT_PID, VIDEO_PID);
-    mpMuxer->tsOutCallback = std::bind(&UnitTest6::muxOutput, this, std::placeholders::_1);
+    mpMuxer = new MpegTsMuxer;
 
     //Send frames containing PTS / DTS then also send in band PCR
     for (int x = 1; x < NUM_FRAMES_LOOP; x++) {
+        SimpleBuffer buffer;
         TsFrame lEsFrame;
         lEsFrame.data = std::make_shared<SimpleBuffer>();
         lEsFrame.data->append((const uint8_t *)&testVector[0], TEST_VECTOR_SIZE);
@@ -217,7 +256,8 @@ bool UnitTest6::runTest() {
         lEsFrame.random_access_indicator = 1;
         lEsFrame.completed = true;
         mFrameInTransit = true;
-        mpMuxer->encode(lEsFrame);
+        mpMuxer->encode(lEsFrame, gStreamPidMap, VIDEO_PID, buffer);
+        muxOutputPtsDtsPcr(buffer);
         if (mFrameInTransit) {
             std::cout << "Frame " << unsigned(x) << " not muxed/demuxed corectly" << std::endl;
             mUnitTestStatus = false;

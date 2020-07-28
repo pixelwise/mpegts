@@ -14,7 +14,7 @@ public:
     bool runTest();
 private:
     void muxOutput(SimpleBuffer &rTsOutBuffer);
-    void dmxOutput(TsFrame *pEs);
+    void dmxOutput(const TsFrame *pEs);
 
     MpegTsDemuxer mDemuxer;
     int mFrameCounter = 1;

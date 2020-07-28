@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
         write_file(frame.get());
         if (frame) {
-            muxer->encode(frame.get(), demuxer.stream_pid_map, demuxer.pmt_id, out);
+            muxer->encode(*frame, demuxer.stream_pid_map, demuxer.pmt_id, out);
             outts.write(out.data(), out.size());
             out.clear();
         }

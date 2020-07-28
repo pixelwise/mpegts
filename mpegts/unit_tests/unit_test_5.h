@@ -13,7 +13,7 @@ class UnitTest5 {
 public:
     bool runTest();
 
-    void dmxOutput(TsFrame *pEs);
+    void dmxOutput(const TsFrame *pEs);
     bool mFrameInTransit = false;
     bool mUnitTestStatus = true;
     int mPacketLength = 0;

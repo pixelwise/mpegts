@@ -30,6 +30,7 @@ public:
     uint64_t pts;
     uint64_t dts;
     uint64_t pcr;
+    uint8_t random_access_indicator;                // 1 bit
     uint8_t stream_type;
     uint8_t stream_id;
     uint16_t pid;

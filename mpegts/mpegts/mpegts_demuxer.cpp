@@ -15,7 +15,7 @@ MpegTsDemuxer::~MpegTsDemuxer()
 {
 }
 
-std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer& in)
+std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer& in, pcr_callback_t pcr_callback)
 {
     while (!in.empty()) {
         int pos = in.pos();
@@ -69,10 +69,12 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer& in)
         if (_ts_frames.find(ts_header.pid) != _ts_frames.end()) {
             uint8_t pcr_flag = 0;
             uint64_t pcr = 0;
+            uint8_t random_access_indicator = 0;
             if (ts_header.adaptation_field_control == MpegTsAdaptationFieldType::adaption_only ||
                 ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_adaption_both) {
                 AdaptationFieldHeader adapt_field;
                 adapt_field.decode(in);
+                random_access_indicator = adapt_field.random_access_indicator;
                 int adflength = adapt_field.adaptation_field_length;
                 pcr_flag = adapt_field.pcr_flag;
                 if (adapt_field.pcr_flag == 1) {
@@ -87,6 +89,7 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer& in)
                 ts_header.adaptation_field_control == MpegTsAdaptationFieldType::payload_adaption_both) {
                 PESHeader pes_header;
                 if (ts_header.payload_unit_start_indicator == 0x01) {
+                    _ts_frames[ts_header.pid]->random_access_indicator = random_access_indicator;
                     if (_ts_frames[ts_header.pid]->completed) {
                         _ts_frames[ts_header.pid]->reset();
                     }
@@ -128,7 +131,7 @@ std::shared_ptr<const TsFrame> MpegTsDemuxer::decode(SimpleBuffer& in)
         } else if (_pcr_id != 0 && _pcr_id == ts_header.pid) {
             AdaptationFieldHeader adapt_field;
             adapt_field.decode(in);
-            uint64_t pcr = read_pcr(in);
+            pcr_callback(read_pcr(in));
         }
 
         in.skip(188 - (in.pos() - pos));

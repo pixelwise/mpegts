@@ -72,7 +72,7 @@ uint8_t tsPacket2[TS_PACKET_SIZE] =
 
 #include "unit_test_5.h"
 
-void UnitTest5::dmxOutput(TsFrame *pEs){
+void UnitTest5::dmxOutput(const TsFrame *pEs){
 
     if (mPacketLength != pEs->data->size()) {
         std::cout << "Content length mismatch. Expected:" << unsigned(mPacketLength) << " bytes" << std::endl;
@@ -95,7 +95,6 @@ void UnitTest5::dmxOutput(TsFrame *pEs){
 bool UnitTest5::runTest() {
 
     MpegTsDemuxer lDemuxer;
-    lDemuxer.esOutCallback = std::bind(&UnitTest5::dmxOutput, this, std::placeholders::_1);
 
     //Prepare vector
     uint8_t vectorCounter = 0;
@@ -122,7 +121,8 @@ bool UnitTest5::runTest() {
     lIn.append(&tsPacket2[0], 188);
 
     mFrameInTransit = true;
-    lDemuxer.decode(lIn);
+    if (auto frame = lDemuxer.decode(lIn))
+        dmxOutput(frame.get());
 
     if (mFrameInTransit) {
         std::cout << "Frame not muxed/demuxed corectly" << std::endl;

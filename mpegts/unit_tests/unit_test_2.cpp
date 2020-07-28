@@ -34,7 +34,7 @@
 //Test Vector size
 #define TEST_VECTOR_SIZE 4000
 
-void UnitTest2::dmxOutput(TsFrame *pEs){
+void UnitTest2::dmxOutput(const TsFrame *pEs){
 
     //Is the frame correctly marked as random_access_indicator
     if ((mFrameCounter%10)?0:1 != pEs->random_access_indicator) {
@@ -77,19 +77,16 @@ void UnitTest2::muxOutput(SimpleBuffer &rTsOutBuffer) {
 
     SimpleBuffer lIn;
     lIn.append(rTsOutBuffer.data(), rTsOutBuffer.size());
-    mDemuxer.decode(lIn);
-
+    if (auto frame = mDemuxer.decode(lIn))
+        dmxOutput(frame.get());
 }
 
 bool UnitTest2::runTest() {
 
-    mDemuxer.esOutCallback = std::bind(&UnitTest2::dmxOutput, this, std::placeholders::_1);
-
     uint8_t testVector[TEST_VECTOR_SIZE];
     std::map<uint8_t, int> gStreamPidMap;
     gStreamPidMap[TYPE_VIDEO] = VIDEO_PID;
-    MpegTsMuxer lMuxer(gStreamPidMap, PMT_PID, VIDEO_PID);
-    lMuxer.tsOutCallback = std::bind(&UnitTest2::muxOutput, this, std::placeholders::_1);
+    MpegTsMuxer lMuxer;
 
     //Make Vector
     for (int x = 0; x < TEST_VECTOR_SIZE; x++) {
@@ -99,6 +96,7 @@ bool UnitTest2::runTest() {
     //Run trough all sizes
     int x = 1;
     for (; x < TEST_VECTOR_SIZE+1; x++) {
+        SimpleBuffer buffer;
         TsFrame lEsFrame;
         lEsFrame.data = std::make_shared<SimpleBuffer>();
         lEsFrame.data->append((const uint8_t *)&testVector[0], x);
@@ -114,7 +112,8 @@ bool UnitTest2::runTest() {
 
         mFrameInTransit = true;
 
-        lMuxer.encode(lEsFrame);
+        lMuxer.encode(lEsFrame, gStreamPidMap, VIDEO_PID, buffer);
+        muxOutput(buffer);
 
         if (mFrameInTransit) {
             std::cout << "Frame " << unsigned(x) << " not muxed/demuxed corectly" << std::endl;

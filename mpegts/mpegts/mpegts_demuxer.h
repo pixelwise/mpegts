@@ -16,7 +16,8 @@ public:
     virtual ~MpegTsDemuxer();
 
 public:
-    std::shared_ptr<const TsFrame> decode(SimpleBuffer& in);
+    using pcr_callback_t = std::function<void(uint64_t)>;
+    std::shared_ptr<const TsFrame> decode(SimpleBuffer& in, pcr_callback_t pcr_callback = 0);
     // stream, pid
     std::map<uint8_t, int> stream_pid_map;
     int pmt_id;
