@@ -23,7 +23,7 @@ void write_file(const TsFrame *frame)
         file_map[frame->pid] = new std::ofstream(std::to_string(frame->pid) + ext, std::ios::binary);
     }
 
-    file_map[frame->pid]->write(frame->_data->data(), frame->_data->size());
+    file_map[frame->pid]->write(frame->data->data(), frame->data->size());
 }
 
 int main(int argc, char *argv[])

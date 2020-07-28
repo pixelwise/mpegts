@@ -8,7 +8,7 @@ TsFrame::TsFrame()
     , pid(0)
     , expected_pes_packet_length(0)
 {
-    _data.reset(new SimpleBuffer);
+    data.reset(new SimpleBuffer);
 }
 
 TsFrame::TsFrame(uint8_t st)
@@ -17,12 +17,12 @@ TsFrame::TsFrame(uint8_t st)
     , pid(0)
     , expected_pes_packet_length(0)
 {
-    _data.reset(new SimpleBuffer);
+    data.reset(new SimpleBuffer);
 }
 
 bool TsFrame::empty()
 {
-    return _data->size() == 0;
+    return data->size() == 0;
 }
 
 void TsFrame::reset()
@@ -30,7 +30,7 @@ void TsFrame::reset()
     pid = 0;
     completed = false;
     expected_pes_packet_length = 0;
-    _data.reset(new SimpleBuffer);
+    data.reset(new SimpleBuffer);
 }
 
 TsHeader::TsHeader()

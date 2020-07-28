@@ -4,6 +4,8 @@
 #include <memory>
 #include <map>
 
+#include "ts_packet.h"
+
 class SimpleBuffer;
 class TsFrame;
 

@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-class SimpleBuffer;
+#include "simple_buffer.h"
 
 class MpegTsStream
 {
@@ -26,7 +26,7 @@ public:
     void reset();
 
 public:
-    std::shared_ptr<SimpleBuffer> _data;
+    std::shared_ptr<SimpleBuffer> data;
     uint64_t pts;
     uint64_t dts;
     uint64_t pcr;

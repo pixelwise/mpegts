@@ -126,7 +126,7 @@ void MpegTsMuxer::create_pmt(SimpleBuffer& sb, std::map<uint8_t, int> stream_pid
 void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer& sb)
 {
     bool first = true;
-    while (!frame->_data->empty()) {
+    while (!frame->data->empty()) {
         SimpleBuffer packet;
 
         TsHeader ts_header;
@@ -164,7 +164,7 @@ void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer& sb)
                pes_header.header_data_length = 0x05;
            }
 
-            uint32_t pes_size = (pes_header.header_data_length + frame->_data->size() + 3);
+            uint32_t pes_size = (pes_header.header_data_length + frame->data->size() + 3);
             pes_header.pes_packet_length = pes_size > 0xffff ? 0 : pes_size;
             pes_header.encode(packet);
 
@@ -183,10 +183,10 @@ void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer& sb)
         uint32_t body_size = 188 - pos;
         packet.write_string(std::string(body_size, 0));
         packet.skip(pos);
-        uint32_t in_size = frame->_data->size() - frame->_data->pos();
+        uint32_t in_size = frame->data->size() - frame->data->pos();
          if (body_size <= in_size) {    // MpegTsAdaptationFieldType::payload_only or MpegTsAdaptationFieldType::payload_adaption_both for AVC
-//             packet.write_string(frame->_data->read_string(body_size));
-             std::string body_string = frame->_data->read_string(body_size);
+//             packet.write_string(frame->data->read_string(body_size));
+             std::string body_string = frame->data->read_string(body_size);
              packet.set_data(pos, body_string.c_str(), body_string.length());
          } else {
              uint16_t stuff_size = body_size - in_size;
@@ -207,8 +207,8 @@ void MpegTsMuxer::create_pes(const TsFrame *frame, SimpleBuffer& sb)
                     memset(&(packet.data()[6]), 0xff, stuff_size - 2);
                  }
              }
-//             packet.write_string(frame->_data->read_string(in_size));
-             std::string body_string = frame->_data->read_string(in_size);
+//             packet.write_string(frame->data->read_string(in_size));
+             std::string body_string = frame->data->read_string(in_size);
              packet.set_data(packet.pos(), body_string.c_str(), body_string.length());
          }
 

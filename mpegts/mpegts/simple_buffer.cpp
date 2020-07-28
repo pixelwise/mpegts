@@ -65,6 +65,11 @@ void SimpleBuffer::write_string(std::string val)
     std::copy(val.begin(), val.end(), std::back_inserter(_data));
 }
 
+void SimpleBuffer::append(const uint8_t* bytes, int size)
+{
+    append(reinterpret_cast<const char*>(bytes), size);
+}
+
 void SimpleBuffer::append(const char* bytes, int size)
 {
     if (!bytes || size <= 0)

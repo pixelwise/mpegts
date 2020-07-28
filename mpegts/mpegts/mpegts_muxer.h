@@ -3,6 +3,8 @@
 #include <map>
 #include <stdint.h>
 
+#include "ts_packet.h"
+
 class SimpleBuffer;
 class TsFrame;
 

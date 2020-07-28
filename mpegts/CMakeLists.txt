@@ -30,3 +30,21 @@ target_link_libraries(
     mpegts_test
     mpegts
 )
+
+add_executable(
+    mpegts_unit_test
+    unit_tests/unit_test_1.cpp
+    unit_tests/unit_test_2.cpp
+    unit_tests/unit_test_3.cpp
+    unit_tests/unit_test_4.cpp
+    unit_tests/unit_test_5.cpp
+    unit_tests/unit_test_6.cpp
+    unit_tests/unit_tests.cpp
+)
+
+target_link_libraries(
+    mpegts_unit_test
+    mpegts
+)
+
+set_target_properties(mpegts_unit_test PROPERTIES EXCLUDE_FROM_ALL TRUE)

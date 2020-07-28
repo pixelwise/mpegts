@@ -21,6 +21,7 @@ public:
     void write_8bytes(int64_t val);
     void write_string(std::string val);
     void append(const char* bytes, int size);
+    void append(const uint8_t* bytes, int size);
 
 public:
     int8_t read_1byte();
